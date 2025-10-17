@@ -29,8 +29,9 @@ COPY . /opt/ckpool
 WORKDIR /opt/ckpool
 
 # Build the software
+# Create m4 directory and initialize autotools
 RUN mkdir -p m4 && \
-    ./autogen.sh && \
+    autoreconf -fi && \
     ./configure && \
     make
 
