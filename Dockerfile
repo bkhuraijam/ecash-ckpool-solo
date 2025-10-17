@@ -31,7 +31,8 @@ WORKDIR /opt/ckpool
 # Build the software
 # Create m4 directory and initialize autotools
 RUN mkdir -p m4 && \
-    autoreconf -fi && \
+    chmod +x autogen.sh && \
+    ./autogen.sh && \
     ./configure && \
     make
 
