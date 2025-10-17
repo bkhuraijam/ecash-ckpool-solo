@@ -21,7 +21,8 @@ COPY . /opt/ckpool
 WORKDIR /opt/ckpool
 
 # Build the software
-RUN ./autogen.sh && \
+RUN mkdir -p m4 && \
+    ./autogen.sh && \
     ./configure && \
     make
 
