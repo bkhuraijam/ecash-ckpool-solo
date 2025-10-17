@@ -15,6 +15,14 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     git \
     && rm -rf /var/lib/apt/lists/*
+    # Install Autoconf 2.71 from source
+RUN apt-get update && apt-get install -y wget build-essential && \
+    wget http://ftp.gnu.org/gnu/autoconf/autoconf-2.71.tar.gz && \
+    tar -xzf autoconf-2.71.tar.gz && \
+    cd autoconf-2.71 && \
+    ./configure && \
+    make && \
+    make install
 
 # Copy source code into container
 COPY . /opt/ckpool
