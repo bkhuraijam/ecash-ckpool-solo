@@ -27,6 +27,6 @@ RUN ./autogen.sh && ./configure && make
 
 # Set working directory and default command
 WORKDIR /opt/ecash-ckpool-solo/src
-CMD ["./ckpool", "-x", "-c", "../ckpool.ecash.conf"]
+CMD ["./ckpool", "-x", "-c", "/config/ckpool.ecash.conf"]
 
 
