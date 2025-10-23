@@ -352,4 +352,6 @@ accept before rejecting further clients.
 only. Requires use of matched bitcoind -zmqpubhashblock option.
 Default: tcp://127.0.0.1:28332
 
-Update: I have dockerised all required services ; ecash-node, ecash-solo-ckpool, postgesql (database) and ckstats (web ui). Its configured in the the docker-compose.yml included. You can just tweak a little as per your desire and requirements and you can have a locally hosted ecash solo mining pool with web ui to motnitor stats.
+UPDATE:
+
+I have dockerised all required services ; ecash-node, ecash-solo-ckpool, postgesql (database) and ckstats (web ui). Its configured in the the docker-compose.yml included. You can just tweak a little as per your desire and requirements and you can have a locally hosted ecash solo mining pool with web ui to motnitor stats.
