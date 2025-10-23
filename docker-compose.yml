@@ -1,0 +1,109 @@
+version: '3.7'
+
+networks:
+  ecashnet:
+    # Uses the existing Docker network where ecash-solo and ecash-node are running.
+    external: true
+
+volumes:
+  # Volume for the PostgreSQL database
+  ckstats_data:
+  # Volume to persist the eCash node data (critical for sync)
+  ecash_node_data:
+
+services:
+  # ----------------------------------------
+  # A. eCash Node (CRITICAL: Required for ecash-solo)
+  # ----------------------------------------
+  ecash-node:
+    image: bitcoinabc/bitcoin-abc:latest
+    container_name: ecash-node
+    restart: always
+    # CRITICAL FIX: Changing user to 'root' to override persistent permission errors 
+    # on the host volume (/home/kamakhu/ecash-node-data). This ensures the node 
+    # can create all necessary directories and files.
+    user: "root"
+    # FIX: Switching to a named volume for persistence. This is more reliable 
+    # FINAL FIX: The logs show the node is looking for data in /root/.bitcoin.
+    # We must remap our existing data volume to that exact path.
+    volumes:
+      - /data/.ecash:/root/.bitcoin
+    command: bitcoind -conf=/root/.bitcoin/ecash.conf
+    networks:
+      - ecashnet
+
+  # ----------------------------------------
+  # B. eCash Solo Pool Service (Using YOUR Docker Hub Image)
+  # ----------------------------------------
+  ecash-solo:
+    # --- CRITICAL CHANGE: Image points to your Docker Hub repository ---
+    image: bkhuraijam/ecash-solo-pool:latest
+    # ------------------------------------------------------------------
+    container_name: ecash-solo
+    restart: always
+    depends_on:
+      - ecash-node
+    ports:
+      - "3333:3333"
+    volumes:
+      # FIX: Correcting the internal path for the configuration file
+      # The CKPool image for eCash expects the config file to be named ckpool.ecash.conf
+      - /home/kamakhu/ecash-ckpool-solo/ckpool.ecash.conf:/config/ckpool.ecash.conf
+    networks:
+      - ecashnet
+      # FIX: Using the correct binary path, removing the unnecessary sleep.
+    command: /opt/ecash-ckpool-solo/src/ckpool -c /config/ckpool.ecash.conf
+
+
+  # ----------------------------------------
+  # 1. PostgreSQL Database Service
+  # ----------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: ecash-ckstats-db
+    restart: always
+    environment:
+      - POSTGRES_USER=ckstats_user
+      - POSTGRES_PASSWORD=ckstats_password
+      - POSTGRES_DB=ckstats_db
+    volumes:
+      - ckstats_data:/var/lib/postgresql/data
+    networks:
+      - ecashnet
+ # FIX: Temporary command to keep the container running for manual debugging.
+    command: tail -f /dev/null
+
+  # ----------------------------------------
+  # 2. CKStats Web Application Service
+  # ----------------------------------------
+  ckstats:
+    image: magicdude4eva/btc-ckstats:latest
+    container_name: ecash-ckstats
+    restart: always
+    depends_on:
+      - postgres
+      - ecash-solo
+    environment:
+      - CKPOOL_HOST=ecash-solo
+      - CKPOOL_PORT=3333
+
+      - DATABASE_HOST=ecash-ckstats-db
+      - DATABASE_NAME=ckstats_db
+      - DATABASE_USER=ckstats_user
+      - DATABASE_PASSWORD=ckstats_password
+
+      - NEXT_PUBLIC_CKPOOL_API_URL=http://192.168.0.90:8088
+      - CKPOOL_LOG_FILE=/logs/ckpool.log
+      - CKPOOL_ENABLE_LIVE_UPDATE=true
+      - ADDRESS_CASE=lower
+      - NEXT_PUBLIC_ADDRESS_VALIDATION_REGEX='^[a-zA-Z0-9]{30,50}$'
+      - WEB_PORT=3000
+
+    ports:
+      - "8088:3000"
+
+    volumes:
+      - /home/kamakhu/ecash-ckpool-solo/ecash-solo-logs:/logs
+
+    networks:
+      - ecashnet
